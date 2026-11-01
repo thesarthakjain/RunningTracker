@@ -12,6 +12,7 @@
       --muted: #737373;
       --border: #e5e5e5;
       --strava: #fc4c02;
+      --lift-shadow: 0 22px 48px -12px rgba(0, 0, 0, 0.14), 0 4px 16px -4px rgba(0, 0, 0, 0.06);
     }
 
     @media (prefers-color-scheme: dark) {
@@ -21,6 +22,7 @@
         --text: #f5f5f5;
         --muted: #a3a3a3;
         --border: #262626;
+        --lift-shadow: 0 24px 52px -12px rgba(0, 0, 0, 0.75), 0 4px 18px -4px rgba(0, 0, 0, 0.5);
       }
     }
 
@@ -44,6 +46,14 @@
       margin-bottom: 2.5rem;
     }
 
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
     header h1 {
       font-size: 1.5rem;
       font-weight: 600;
@@ -53,15 +63,58 @@
     header p {
       color: var(--muted);
       font-size: 0.9rem;
-      margin-top: 0.25rem;
+      margin-top: 0.35rem;
+    }
+
+    .sort-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 0.15s ease, color 0.15s ease, opacity 0.2s ease, transform 0.1s ease;
+    }
+
+    .sort-btn:hover:not(:disabled) {
+      border-color: var(--strava);
+      color: var(--strava);
+    }
+
+    .sort-btn:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    .sort-btn:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+
+    /* Outer wrapper that flips section order */
+    #sections-container {
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+      position: relative;
+    }
+
+    #sections-container.oldest-first {
+      flex-direction: column-reverse;
     }
 
     .section-block {
-      margin-bottom: 3rem;
-    }
-
-    .section-block:last-of-type {
-      margin-bottom: 0;
+      position: relative;
+      border-radius: 14px;
+      padding: 0.85rem 1rem;
+      margin: -0.85rem -1rem;
+      background-color: transparent;
+      border: 1px solid transparent;
+      transform-origin: center center;
+      will-change: transform, opacity, box-shadow, background-color;
     }
 
     .section-title {
@@ -85,7 +138,7 @@
 
     .section-title .chevron {
       font-size: 0.65rem;
-      transition: transform 0.2s ease, color 0.15s ease;
+      transition: transform 0.25s ease, color 0.15s ease;
     }
 
     .section-title:hover .chevron {
@@ -106,20 +159,22 @@
       border-left: 2px solid var(--border);
       margin-left: 0.5rem;
       padding-left: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2.1rem;
     }
 
-    /* Dashed line for future planned runs */
+    /* Reverse items inside each timeline when in Oldest to Newest mode */
+    #sections-container.oldest-first .timeline {
+      flex-direction: column-reverse;
+    }
+
     .timeline.future-timeline {
       border-left-style: dashed;
     }
 
     .timeline-item {
       position: relative;
-      margin-bottom: 2.25rem;
-    }
-
-    .timeline-item:last-child {
-      margin-bottom: 0;
     }
 
     .timeline-dot {
@@ -178,7 +233,7 @@
     .chevron {
       font-size: 0.75rem;
       color: var(--muted);
-      transition: transform 0.2s ease;
+      transition: transform 0.25s ease;
       display: inline-block;
     }
 
@@ -211,9 +266,28 @@
       font-weight: 500;
     }
 
-    .item-details {
-      display: none;
+    /* CSS Grid accordion wrapper for smooth folding and unfolding */
+    .details-collapse {
+      display: grid;
+      grid-template-rows: 0fr;
+      opacity: 0;
+      transition: grid-template-rows 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+                  opacity 0.25s ease,
+                  margin-top 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-top: 0;
+    }
+
+    .timeline-item.open .details-collapse {
+      grid-template-rows: 1fr;
+      opacity: 1;
       margin-top: 0.75rem;
+    }
+
+    .details-inner {
+      overflow: hidden;
+    }
+
+    .item-details {
       padding: 1rem;
       background-color: var(--card-bg);
       border: 1px solid var(--border);
@@ -221,16 +295,11 @@
       font-size: 0.92rem;
     }
 
-    .timeline-item.open .item-details {
-      display: block;
-    }
-
     .item-description {
       color: var(--text);
       white-space: pre-line;
     }
 
-    /* Goals layout for Future Tracker */
     .goals-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -262,6 +331,10 @@
     .embed-container {
       margin-top: 1rem;
       overflow-x: auto;
+    }
+
+    .embed-container:empty {
+      display: none;
     }
 
     .media-grid {
@@ -301,27 +374,32 @@
 <body>
 
   <header>
-    <h1>Running Milestones</h1>
+    <div class="header-top">
+      <h1>Running Milestones</h1>
+      <button id="sort-btn" class="sort-btn" type="button">Sort: Oldest to newest</button>
+    </div>
     <p>Tap any milestone or section header to expand targets, notes, race bibs, and medals.</p>
   </header>
 
-  <!-- Section 1: Future Runs / Milestones Planned -->
-  <section class="section-block" id="future-section">
-    <h2 id="future-heading" class="section-title" title="Click to expand or collapse all">
-      <span class="chevron">&#9654;</span> Upcoming Targets
-    </h2>
-    <div id="future-status" class="status-msg">Loading upcoming runs...</div>
-    <div id="future-timeline" class="timeline future-timeline" style="display: none;"></div>
-  </section>
+  <main id="sections-container">
+    <!-- Section 1: Future Runs / Milestones Planned -->
+    <section class="section-block" id="future-section">
+      <h2 id="future-heading" class="section-title" title="Click to expand or collapse all">
+        <span class="chevron">&#9654;</span> Upcoming Targets
+      </h2>
+      <div id="future-status" class="status-msg">Loading upcoming runs...</div>
+      <div id="future-timeline" class="timeline future-timeline" style="display: none;"></div>
+    </section>
 
-  <!-- Section 2: Completed Milestones -->
-  <section class="section-block" id="past-section">
-    <h2 id="past-heading" class="section-title" title="Click to expand or collapse all">
-      <span class="chevron">&#9654;</span> Completed Milestones
-    </h2>
-    <div id="past-status" class="status-msg">Loading milestones...</div>
-    <div id="past-timeline" class="timeline" style="display: none;"></div>
-  </section>
+    <!-- Section 2: Completed Milestones -->
+    <section class="section-block" id="past-section">
+      <h2 id="past-heading" class="section-title" title="Click to expand or collapse all">
+        <span class="chevron">&#9654;</span> Completed Milestones
+      </h2>
+      <div id="past-status" class="status-msg">Loading milestones...</div>
+      <div id="past-timeline" class="timeline" style="display: none;"></div>
+    </section>
+  </main>
 
   <script>
     const SHEET_ID = "1YRHuUMLQ0J7Nhu76l6jzs8XJykrZYbEc68CJCzuAS1s";
@@ -331,6 +409,139 @@
 
     const FUTURE_URL = `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(FUTURE_TAB)}`;
     const PAST_URL = `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(PAST_TAB)}`;
+
+    const sectionsContainer = document.getElementById("sections-container");
+    const futureSection = document.getElementById("future-section");
+    const pastSection = document.getElementById("past-section");
+    const futureTimeline = document.getElementById("future-timeline");
+    const pastTimeline = document.getElementById("past-timeline");
+    const futureHeading = document.getElementById("future-heading");
+    const pastHeading = document.getElementById("past-heading");
+    const sortBtn = document.getElementById("sort-btn");
+
+    let isOldestFirst = false;
+    let isAnimating = false;
+
+    const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    // Choreographed Fold (if needed) -> 3D Lift & Dim Glide -> Unfold (if needed)
+    sortBtn.addEventListener("click", async () => {
+      if (isAnimating) return;
+      isAnimating = true;
+      sortBtn.disabled = true;
+
+      // 1. Check which items are currently open
+      const previouslyOpenItems = Array.from(
+        document.querySelectorAll(".timeline-item.open")
+      );
+      const hadOpenItems = previouslyOpenItems.length > 0;
+
+      // 2. FOLD PHASE (only executes if at least one item was expanded)
+      if (hadOpenItems) {
+        previouslyOpenItems.forEach(item => item.classList.remove("open"));
+        syncSectionHeading(futureTimeline, futureHeading);
+        syncSectionHeading(pastTimeline, pastHeading);
+        await wait(340); // Wait for smooth CSS grid fold to complete
+      }
+
+      // 3. MEASURE BEFORE POSITIONS (First)
+      const pastStartTop = pastSection.getBoundingClientRect().top;
+      const futureStartTop = futureSection.getBoundingClientRect().top;
+
+      // 4. FLIP DOM ORDER (Last)
+      isOldestFirst = !isOldestFirst;
+      sectionsContainer.classList.toggle("oldest-first", isOldestFirst);
+      sortBtn.textContent = isOldestFirst
+        ? "Sort: Newest to oldest"
+        : "Sort: Oldest to newest";
+
+      const pastDeltaY = pastStartTop - pastSection.getBoundingClientRect().top;
+      const futureDeltaY = futureStartTop - futureSection.getBoundingClientRect().top;
+
+      // Layer Completed Milestones in foreground, Upcoming Targets underneath
+      pastSection.style.zIndex = "20";
+      futureSection.style.zIndex = "5";
+      pastSection.style.backgroundColor = "var(--card-bg)";
+      pastSection.style.borderColor = "var(--border)";
+
+      const GLIDE_DURATION = 1500;
+      const GLIDE_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+      // 5. ANIMATE 3D SWAP
+      // Completed Milestones: lifts up, scales to 1.03x with soft card shadow, glides to new spot
+      const pastAnim = pastSection.animate(
+        [
+          {
+            transform: `translateY(${pastDeltaY}px) scale(1)`,
+            boxShadow: "0 0 0 rgba(0, 0, 0, 0)",
+            offset: 0
+          },
+          {
+            transform: `translateY(${pastDeltaY * 0.72}px) scale(1.03)`,
+            boxShadow: "var(--lift-shadow)",
+            offset: 0.22
+          },
+          {
+            transform: `translateY(${pastDeltaY * 0.18}px) scale(1.03)`,
+            boxShadow: "var(--lift-shadow)",
+            offset: 0.78
+          },
+          {
+            transform: "translateY(0px) scale(1)",
+            boxShadow: "0 0 0 rgba(0, 0, 0, 0)",
+            offset: 1
+          }
+        ],
+        { duration: GLIDE_DURATION, easing: GLIDE_EASING }
+      );
+
+      // Upcoming Targets: dims to 42% opacity, scales down to 0.95x, slides underneath
+      const futureAnim = futureSection.animate(
+        [
+          {
+            transform: `translateY(${futureDeltaY}px) scale(1)`,
+            opacity: 1,
+            offset: 0
+          },
+          {
+            transform: `translateY(${futureDeltaY * 0.72}px) scale(0.95)`,
+            opacity: 0.42,
+            offset: 0.22
+          },
+          {
+            transform: `translateY(${futureDeltaY * 0.18}px) scale(0.95)`,
+            opacity: 0.42,
+            offset: 0.78
+          },
+          {
+            transform: "translateY(0px) scale(1)",
+            opacity: 1,
+            offset: 1
+          }
+        ],
+        { duration: GLIDE_DURATION, easing: GLIDE_EASING }
+      );
+
+      await Promise.all([pastAnim.finished, futureAnim.finished]);
+
+      // Clean up temporary elevation styles
+      pastSection.style.zIndex = "";
+      futureSection.style.zIndex = "";
+      pastSection.style.backgroundColor = "";
+      pastSection.style.borderColor = "";
+
+      // 6. UNFOLD PHASE (only executes if items were open prior to clicking sort)
+      if (hadOpenItems) {
+        await wait(60);
+        previouslyOpenItems.forEach(item => item.classList.add("open"));
+        syncSectionHeading(futureTimeline, futureHeading);
+        syncSectionHeading(pastTimeline, pastHeading);
+        await wait(340);
+      }
+
+      isAnimating = false;
+      sortBtn.disabled = false;
+    });
 
     // Syncs the section headline's chevron rotation based on whether all items are open
     function syncSectionHeading(timelineEl, headingEl) {
@@ -342,6 +553,7 @@
     // Makes the section headline expand all items if any are closed, or collapse all if all are open
     function setupHeadingToggle(timelineEl, headingEl) {
       headingEl.addEventListener("click", () => {
+        if (isAnimating) return;
         const items = Array.from(timelineEl.querySelectorAll(".timeline-item"));
         if (!items.length) return;
 
@@ -362,10 +574,19 @@
       });
     }
 
+    // Wraps details content in the smooth CSS Grid accordion container
+    function createCollapsibleWrapper(detailsEl) {
+      const collapse = document.createElement("div");
+      collapse.className = "details-collapse";
+      const inner = document.createElement("div");
+      inner.className = "details-inner";
+      inner.appendChild(detailsEl);
+      collapse.appendChild(inner);
+      return collapse;
+    }
+
     async function loadFutureTimeline() {
       const statusEl = document.getElementById("future-status");
-      const timelineEl = document.getElementById("future-timeline");
-      const headingEl = document.getElementById("future-heading");
 
       try {
         const res = await fetch(FUTURE_URL);
@@ -379,7 +600,8 @@
           return;
         }
 
-        validRows.forEach(row => {
+        // Reversed initially so farthest future target is at the top in default (Newest to oldest) mode
+        validRows.reverse().forEach(row => {
           const date = (row["Date"] || "").trim();
           const title = (row["Achievement"] || "").trim();
           const goalA = (row["Goal A"] || "").trim();
@@ -440,19 +662,20 @@
           }
 
           details.appendChild(goalsGrid);
-          item.appendChild(details);
+          item.appendChild(createCollapsibleWrapper(details));
 
           titleGroup.addEventListener("click", () => {
+            if (isAnimating) return;
             item.classList.toggle("open");
-            syncSectionHeading(timelineEl, headingEl);
+            syncSectionHeading(futureTimeline, futureHeading);
           });
 
-          timelineEl.appendChild(item);
+          futureTimeline.appendChild(item);
         });
 
         statusEl.style.display = "none";
-        timelineEl.style.display = "block";
-        setupHeadingToggle(timelineEl, headingEl);
+        futureTimeline.style.display = "flex";
+        setupHeadingToggle(futureTimeline, futureHeading);
       } catch (err) {
         statusEl.textContent = "Unable to load upcoming runs. Check tab name 'Future Tracker'.";
         console.error(err);
@@ -461,8 +684,6 @@
 
     async function loadPastTimeline() {
       const statusEl = document.getElementById("past-status");
-      const timelineEl = document.getElementById("past-timeline");
-      const headingEl = document.getElementById("past-heading");
 
       try {
         const res = await fetch(PAST_URL);
@@ -476,7 +697,7 @@
           return;
         }
 
-        // Newest to oldest
+        // Reversed initially so newest completed milestone is on top in default (Newest to oldest) mode
         validRows.reverse().forEach(row => {
           const id = (row["ID"] || "").trim();
           const date = (row["Date"] || "").trim();
@@ -537,7 +758,7 @@
           mediaGrid.className = "media-grid";
           details.appendChild(mediaGrid);
 
-          item.appendChild(details);
+          item.appendChild(createCollapsibleWrapper(details));
 
           // Lazy-loads media & embeds when opened individually or via the section headline
           item._loadContent = () => {
@@ -553,19 +774,20 @@
           };
 
           titleGroup.addEventListener("click", () => {
+            if (isAnimating) return;
             const isOpen = item.classList.toggle("open");
             if (isOpen) {
               item._loadContent();
             }
-            syncSectionHeading(timelineEl, headingEl);
+            syncSectionHeading(pastTimeline, pastHeading);
           });
 
-          timelineEl.appendChild(item);
+          pastTimeline.appendChild(item);
         });
 
         statusEl.style.display = "none";
-        timelineEl.style.display = "block";
-        setupHeadingToggle(timelineEl, headingEl);
+        pastTimeline.style.display = "flex";
+        setupHeadingToggle(pastTimeline, pastHeading);
       } catch (err) {
         statusEl.textContent = "Unable to load milestones. Check Sheet ID & sharing permissions.";
         console.error(err);
