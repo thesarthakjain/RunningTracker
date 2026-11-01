@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Running Milestones</title>
+  <style>
+    :root {
+      --bg: #fafafa;
+      --card-bg: #ffffff;
+      --text: #171717;
+      --muted: #737373;
+      --border: #e5e5e5;
+      --strava: #fc4c02;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0a0a0a;
+        --card-bg: #141414;
+        --text: #f5f5f5;
+        --muted: #a3a3a3;
+        --border: #262626;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 3rem 1.25rem;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 3rem;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 0.25rem;
+    }
+
+    #status {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .timeline {
+      position: relative;
+      border-left: 2px solid var(--border);
+      margin-left: 0.5rem;
+      padding-left: 1.75rem;
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 2.25rem;
+    }
+
+    .timeline-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -2.15rem;
+      top: 0.35rem;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: var(--bg);
+      border: 2px solid var(--strava);
+      transition: background-color 0.2s ease;
+    }
+
+    .timeline-item.open .timeline-dot {
+      background-color: var(--strava);
+    }
+
+    .item-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .item-title-group {
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: baseline;
+      gap: 0.65rem;
+    }
+
+    .item-date {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .item-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      transition: color 0.15s ease;
+    }
+
+    .item-title-group:hover .item-title {
+      color: var(--strava);
+    }
+
+    .chevron {
+      font-size: 0.75rem;
+      color: var(--muted);
+      transition: transform 0.2s ease;
+      display: inline-block;
+    }
+
+    .timeline-item.open .chevron {
+      transform: rotate(90deg);
+    }
+
+    .strava-link {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--strava);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      transition: border-color 0.15s ease;
+    }
+
+    .strava-link:hover {
+      border-color: var(--strava);
+    }
+
+    .item-details {
+      display: none;
+      margin-top: 0.75rem;
+      padding: 1rem;
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.92rem;
+    }
+
+    .timeline-item.open .item-details {
+      display: block;
+    }
+
+    .item-description {
+      color: var(--text);
+      white-space: pre-line;
+    }
+
+    .embed-container {
+      margin-top: 1rem;
+      overflow-x: auto;
+    }
+
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .media-grid:empty {
+      display: none;
+    }
+
+    .media-card {
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .media-card img {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: cover;
+    }
+
+    .media-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      padding: 0.3rem 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Running Milestones</h1>
+    <p>Tap any achievement to expand notes, race bibs, and medals.</p>
+  </header>
+
+  <div id="status">Loading milestones...</div>
+  <div id="timeline" class="timeline" style="display: none;"></div>
+
+  <script>
+    // 1. Replace with your Google Sheet ID and Sheet Tab Name
+    const SHEET_ID = "1YRHuUMLQ0J7Nhu76l6jzs8XJykrZYbEc68CJCzuAS1s";
+    const SHEET_TAB = "Sheet1";
+    const IMAGE_FOLDER = "./images";
+
+    // Uses OpenSheet API to fetch Google Sheet rows cleanly as JSON
+    const DATA_URL = `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(SHEET_TAB)}`;
+
+    async function loadTimeline() {
+      const statusEl = document.getElementById("status");
+      const timelineEl = document.getElementById("timeline");
+
+      try {
+        const res = await fetch(DATA_URL);
+        if (!res.ok) throw new Error("Failed to fetch sheet data");
+        const rows = await res.json();
+
+        if (!rows.length) {
+          statusEl.textContent = "No milestones recorded yet.";
+          return;
+        }
+
+        // Sort newest to oldest by Date (optional; remove .reverse() to keep sheet order)
+        rows.reverse().forEach(row => {
+          const id = (row["ID"] || "").trim();
+          const date = (row["Date"] || "").trim();
+          const title = (row["Achievement"] || "").trim();
+          const desc = (row["Description"] || "").trim();
+          const stravaUrl = (row["Strava"] || "").trim();
+          const embedCode = (row["Embed Code"] || "").trim();
+
+          if (!title) return;
+
+          const item = document.createElement("div");
+          item.className = "timeline-item";
+
+          // Dot
+          const dot = document.createElement("div");
+          dot.className = "timeline-dot";
+          item.appendChild(dot);
+
+          // Header row
+          const header = document.createElement("div");
+          header.className = "item-header";
+
+          const titleGroup = document.createElement("div");
+          titleGroup.className = "item-title-group";
+          titleGroup.innerHTML = `
+            <span class="chevron">&#9654;</span>
+            <span class="item-date">${escapeHtml(date)}</span>
+            <span class="item-title">${escapeHtml(title)}</span>
+          `;
+
+          header.appendChild(titleGroup);
+
+          if (stravaUrl) {
+            const stravaBtn = document.createElement("a");
+            stravaBtn.className = "strava-link";
+            stravaBtn.href = stravaUrl;
+            stravaBtn.target = "_blank";
+            stravaBtn.rel = "noopener noreferrer";
+            stravaBtn.textContent = "Strava ↗";
+            header.appendChild(stravaBtn);
+          }
+
+          item.appendChild(header);
+
+          // Expandable Details
+          const details = document.createElement("div");
+          details.className = "item-details";
+
+          if (desc) {
+            const descP = document.createElement("p");
+            descP.className = "item-description";
+            descP.textContent = desc;
+            details.appendChild(descP);
+          }
+
+          // Optional Strava Embed Code (rendered lazily on first open)
+          let embedLoaded = false;
+          const embedContainer = document.createElement("div");
+          embedContainer.className = "embed-container";
+          details.appendChild(embedContainer);
+
+          // Media container for auto-detected Bib & Medal photos
+          let mediaLoaded = false;
+          const mediaGrid = document.createElement("div");
+          mediaGrid.className = "media-grid";
+          details.appendChild(mediaGrid);
+
+          item.appendChild(details);
+
+          // Toggle open/close on click
+          titleGroup.addEventListener("click", () => {
+            const isOpen = item.classList.toggle("open");
+
+            // Lazy-load images & embeds only when user clicks to expand
+            if (isOpen && !mediaLoaded && id) {
+              mediaLoaded = true;
+              probeAndAttachImage(id, "bib", "Race Bib", mediaGrid);
+              probeAndAttachImage(id, "medal", "Medal", mediaGrid);
+            }
+
+            if (isOpen && !embedLoaded && embedCode) {
+              embedLoaded = true;
+              injectEmbedCode(embedCode, embedContainer);
+            }
+          });
+
+          timelineEl.appendChild(item);
+        });
+
+        statusEl.style.display = "none";
+        timelineEl.style.display = "block";
+      } catch (err) {
+        statusEl.textContent = "Unable to load milestones. Check Sheet ID & sharing permissions.";
+        console.error(err);
+      }
+    }
+
+    // Automatically checks for .jpg, .png, or .webp files matching {ID}-bib or {ID}-medal
+    function probeAndAttachImage(id, type, label, container) {
+      const extensions = ["jpg", "jpeg", "png", "webp"];
+
+      function tryNext(index) {
+        if (index >= extensions.length) return; // None found, silently ignore
+        const ext = extensions[index];
+        const img = new Image();
+        img.src = `${IMAGE_FOLDER}/${id}-${type}.${ext}`;
+        img.alt = `${label} #${id}`;
+
+        img.onload = () => {
+          const card = document.createElement("div");
+          card.className = "media-card";
+          card.innerHTML = `<div class="media-label">${label}</div>`;
+          card.prepend(img);
+          container.appendChild(card);
+        };
+
+        img.onerror = () => tryNext(index + 1);
+      }
+
+      tryNext(0);
+    }
+
+    // Safely executes Strava's <script> tag if you paste an HTML embed snippet
+    function injectEmbedCode(htmlString, container) {
+      container.innerHTML = htmlString;
+      const scripts = container.querySelectorAll("script");
+      scripts.forEach(oldScript => {
+        const newScript = document.createElement("script");
+        Array.from(oldScript.attributes).forEach(attr =>
+          newScript.setAttribute(attr.name, attr.value)
+        );
+        newScript.textContent = oldScript.textContent;
+        oldScript.parentNode.replaceChild(newScript, oldScript);
+      });
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, m => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[m]));
+    }
+
+    loadTimeline();
+  </script>
+</body>
+</html>
