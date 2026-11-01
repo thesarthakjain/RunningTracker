@@ -41,7 +41,7 @@
     }
 
     header {
-      margin-bottom: 3rem;
+      margin-bottom: 2.5rem;
     }
 
     header h1 {
@@ -56,7 +56,47 @@
       margin-top: 0.25rem;
     }
 
-    #status {
+    .section-block {
+      margin-bottom: 3rem;
+    }
+
+    .section-block:last-of-type {
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 1.25rem;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.15s ease;
+    }
+
+    .section-title:hover {
+      color: var(--strava);
+    }
+
+    .section-title .chevron {
+      font-size: 0.65rem;
+      transition: transform 0.2s ease, color 0.15s ease;
+    }
+
+    .section-title:hover .chevron {
+      color: var(--strava);
+    }
+
+    .section-title.all-open .chevron {
+      transform: rotate(90deg);
+    }
+
+    .status-msg {
       color: var(--muted);
       font-size: 0.9rem;
     }
@@ -66,6 +106,11 @@
       border-left: 2px solid var(--border);
       margin-left: 0.5rem;
       padding-left: 1.75rem;
+    }
+
+    /* Dashed line for future planned runs */
+    .timeline.future-timeline {
+      border-left-style: dashed;
     }
 
     .timeline-item {
@@ -86,11 +131,16 @@
       border-radius: 50%;
       background-color: var(--bg);
       border: 2px solid var(--strava);
-      transition: background-color 0.2s ease;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .future-timeline .timeline-dot {
+      border-color: var(--muted);
     }
 
     .timeline-item.open .timeline-dot {
       background-color: var(--strava);
+      border-color: var(--strava);
     }
 
     .item-header {
@@ -136,20 +186,29 @@
       transform: rotate(90deg);
     }
 
-    .strava-link {
+    .strava-link,
+    .planned-badge {
       font-size: 0.75rem;
       font-weight: 600;
-      color: var(--strava);
       text-decoration: none;
       border: 1px solid var(--border);
       background: var(--card-bg);
       padding: 0.15rem 0.55rem;
       border-radius: 999px;
+    }
+
+    .strava-link {
+      color: var(--strava);
       transition: border-color 0.15s ease;
     }
 
     .strava-link:hover {
       border-color: var(--strava);
+    }
+
+    .planned-badge {
+      color: var(--muted);
+      font-weight: 500;
     }
 
     .item-details {
@@ -169,6 +228,35 @@
     .item-description {
       color: var(--text);
       white-space: pre-line;
+    }
+
+    /* Goals layout for Future Tracker */
+    .goals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .goal-box {
+      padding: 0.65rem 0.8rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background-color: var(--bg);
+    }
+
+    .goal-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--strava);
+      margin-bottom: 0.2rem;
+    }
+
+    .goal-value {
+      font-size: 0.92rem;
+      font-weight: 500;
+      color: var(--text);
     }
 
     .embed-container {
@@ -214,37 +302,182 @@
 
   <header>
     <h1>Running Milestones</h1>
-    <p>Tap any achievement to expand notes, race bibs, and medals.</p>
+    <p>Tap any milestone or section header to expand targets, notes, race bibs, and medals.</p>
   </header>
 
-  <div id="status">Loading milestones...</div>
-  <div id="timeline" class="timeline" style="display: none;"></div>
+  <!-- Section 1: Future Runs / Milestones Planned -->
+  <section class="section-block" id="future-section">
+    <h2 id="future-heading" class="section-title" title="Click to expand or collapse all">
+      <span class="chevron">&#9654;</span> Upcoming Targets
+    </h2>
+    <div id="future-status" class="status-msg">Loading upcoming runs...</div>
+    <div id="future-timeline" class="timeline future-timeline" style="display: none;"></div>
+  </section>
+
+  <!-- Section 2: Completed Milestones -->
+  <section class="section-block" id="past-section">
+    <h2 id="past-heading" class="section-title" title="Click to expand or collapse all">
+      <span class="chevron">&#9654;</span> Completed Milestones
+    </h2>
+    <div id="past-status" class="status-msg">Loading milestones...</div>
+    <div id="past-timeline" class="timeline" style="display: none;"></div>
+  </section>
 
   <script>
-    // 1. Replace with your Google Sheet ID and Sheet Tab Name
     const SHEET_ID = "1YRHuUMLQ0J7Nhu76l6jzs8XJykrZYbEc68CJCzuAS1s";
-    const SHEET_TAB = "Past tracker";
+    const FUTURE_TAB = "Future Tracker";
+    const PAST_TAB = "Past tracker";
     const IMAGE_FOLDER = "./images";
 
-    // Uses OpenSheet API to fetch Google Sheet rows cleanly as JSON
-    const DATA_URL = `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(SHEET_TAB)}`;
+    const FUTURE_URL = `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(FUTURE_TAB)}`;
+    const PAST_URL = `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(PAST_TAB)}`;
 
-    async function loadTimeline() {
-      const statusEl = document.getElementById("status");
-      const timelineEl = document.getElementById("timeline");
+    // Syncs the section headline's chevron rotation based on whether all items are open
+    function syncSectionHeading(timelineEl, headingEl) {
+      const items = Array.from(timelineEl.querySelectorAll(".timeline-item"));
+      const allOpen = items.length > 0 && items.every(item => item.classList.contains("open"));
+      headingEl.classList.toggle("all-open", allOpen);
+    }
+
+    // Makes the section headline expand all items if any are closed, or collapse all if all are open
+    function setupHeadingToggle(timelineEl, headingEl) {
+      headingEl.addEventListener("click", () => {
+        const items = Array.from(timelineEl.querySelectorAll(".timeline-item"));
+        if (!items.length) return;
+
+        const shouldExpand = items.some(item => !item.classList.contains("open"));
+
+        items.forEach(item => {
+          if (shouldExpand) {
+            item.classList.add("open");
+            if (typeof item._loadContent === "function") {
+              item._loadContent();
+            }
+          } else {
+            item.classList.remove("open");
+          }
+        });
+
+        syncSectionHeading(timelineEl, headingEl);
+      });
+    }
+
+    async function loadFutureTimeline() {
+      const statusEl = document.getElementById("future-status");
+      const timelineEl = document.getElementById("future-timeline");
+      const headingEl = document.getElementById("future-heading");
 
       try {
-        const res = await fetch(DATA_URL);
-        if (!res.ok) throw new Error("Failed to fetch sheet data");
+        const res = await fetch(FUTURE_URL);
+        if (!res.ok) throw new Error("Failed to fetch future sheet data");
         const rows = await res.json();
 
-        if (!rows.length) {
+        const validRows = rows.filter(r => (r["Achievement"] || "").trim() !== "");
+
+        if (!validRows.length) {
+          statusEl.textContent = "No upcoming targets scheduled right now.";
+          return;
+        }
+
+        validRows.forEach(row => {
+          const date = (row["Date"] || "").trim();
+          const title = (row["Achievement"] || "").trim();
+          const goalA = (row["Goal A"] || "").trim();
+          const goalB = (row["Goal B"] || "").trim();
+
+          const item = document.createElement("div");
+          item.className = "timeline-item";
+
+          const dot = document.createElement("div");
+          dot.className = "timeline-dot";
+          item.appendChild(dot);
+
+          const header = document.createElement("div");
+          header.className = "item-header";
+
+          const titleGroup = document.createElement("div");
+          titleGroup.className = "item-title-group";
+          titleGroup.innerHTML = `
+            <span class="chevron">&#9654;</span>
+            <span class="item-date">${escapeHtml(date)}</span>
+            <span class="item-title">${escapeHtml(title)}</span>
+          `;
+          header.appendChild(titleGroup);
+
+          const badge = document.createElement("span");
+          badge.className = "planned-badge";
+          badge.textContent = "Planned";
+          header.appendChild(badge);
+
+          item.appendChild(header);
+
+          const details = document.createElement("div");
+          details.className = "item-details";
+
+          const goalsGrid = document.createElement("div");
+          goalsGrid.className = "goals-grid";
+
+          if (goalA) {
+            goalsGrid.innerHTML += `
+              <div class="goal-box">
+                <div class="goal-label">Goal A</div>
+                <div class="goal-value">${escapeHtml(goalA)}</div>
+              </div>
+            `;
+          }
+
+          if (goalB) {
+            goalsGrid.innerHTML += `
+              <div class="goal-box">
+                <div class="goal-label">Goal B</div>
+                <div class="goal-value">${escapeHtml(goalB)}</div>
+              </div>
+            `;
+          }
+
+          if (!goalA && !goalB) {
+            goalsGrid.innerHTML = `<p class="item-description">Targets to be finalized.</p>`;
+          }
+
+          details.appendChild(goalsGrid);
+          item.appendChild(details);
+
+          titleGroup.addEventListener("click", () => {
+            item.classList.toggle("open");
+            syncSectionHeading(timelineEl, headingEl);
+          });
+
+          timelineEl.appendChild(item);
+        });
+
+        statusEl.style.display = "none";
+        timelineEl.style.display = "block";
+        setupHeadingToggle(timelineEl, headingEl);
+      } catch (err) {
+        statusEl.textContent = "Unable to load upcoming runs. Check tab name 'Future Tracker'.";
+        console.error(err);
+      }
+    }
+
+    async function loadPastTimeline() {
+      const statusEl = document.getElementById("past-status");
+      const timelineEl = document.getElementById("past-timeline");
+      const headingEl = document.getElementById("past-heading");
+
+      try {
+        const res = await fetch(PAST_URL);
+        if (!res.ok) throw new Error("Failed to fetch past sheet data");
+        const rows = await res.json();
+
+        const validRows = rows.filter(r => (r["Achievement"] || "").trim() !== "");
+
+        if (!validRows.length) {
           statusEl.textContent = "No milestones recorded yet.";
           return;
         }
 
-        // Sort newest to oldest by Date (optional; remove .reverse() to keep sheet order)
-        rows.reverse().forEach(row => {
+        // Newest to oldest
+        validRows.reverse().forEach(row => {
           const id = (row["ID"] || "").trim();
           const date = (row["Date"] || "").trim();
           const title = (row["Achievement"] || "").trim();
@@ -252,17 +485,13 @@
           const stravaUrl = (row["Strava"] || "").trim();
           const embedCode = (row["Embed Code"] || "").trim();
 
-          if (!title) return;
-
           const item = document.createElement("div");
           item.className = "timeline-item";
 
-          // Dot
           const dot = document.createElement("div");
           dot.className = "timeline-dot";
           item.appendChild(dot);
 
-          // Header row
           const header = document.createElement("div");
           header.className = "item-header";
 
@@ -288,7 +517,6 @@
 
           item.appendChild(header);
 
-          // Expandable Details
           const details = document.createElement("div");
           details.className = "item-details";
 
@@ -299,13 +527,11 @@
             details.appendChild(descP);
           }
 
-          // Optional Strava Embed Code (rendered lazily on first open)
           let embedLoaded = false;
           const embedContainer = document.createElement("div");
           embedContainer.className = "embed-container";
           details.appendChild(embedContainer);
 
-          // Media container for auto-detected Bib & Medal photos
           let mediaLoaded = false;
           const mediaGrid = document.createElement("div");
           mediaGrid.className = "media-grid";
@@ -313,21 +539,25 @@
 
           item.appendChild(details);
 
-          // Toggle open/close on click
-          titleGroup.addEventListener("click", () => {
-            const isOpen = item.classList.toggle("open");
-
-            // Lazy-load images & embeds only when user clicks to expand
-            if (isOpen && !mediaLoaded && id) {
+          // Lazy-loads media & embeds when opened individually or via the section headline
+          item._loadContent = () => {
+            if (!mediaLoaded && id) {
               mediaLoaded = true;
               probeAndAttachImage(id, "bib", "Race Bib", mediaGrid);
               probeAndAttachImage(id, "medal", "Medal", mediaGrid);
             }
-
-            if (isOpen && !embedLoaded && embedCode) {
+            if (!embedLoaded && embedCode) {
               embedLoaded = true;
               injectEmbedCode(embedCode, embedContainer);
             }
+          };
+
+          titleGroup.addEventListener("click", () => {
+            const isOpen = item.classList.toggle("open");
+            if (isOpen) {
+              item._loadContent();
+            }
+            syncSectionHeading(timelineEl, headingEl);
           });
 
           timelineEl.appendChild(item);
@@ -335,18 +565,18 @@
 
         statusEl.style.display = "none";
         timelineEl.style.display = "block";
+        setupHeadingToggle(timelineEl, headingEl);
       } catch (err) {
         statusEl.textContent = "Unable to load milestones. Check Sheet ID & sharing permissions.";
         console.error(err);
       }
     }
 
-    // Automatically checks for .jpg, .png, or .webp files matching {ID}-bib or {ID}-medal
     function probeAndAttachImage(id, type, label, container) {
       const extensions = ["jpg", "jpeg", "png", "webp"];
 
       function tryNext(index) {
-        if (index >= extensions.length) return; // None found, silently ignore
+        if (index >= extensions.length) return;
         const ext = extensions[index];
         const img = new Image();
         img.src = `${IMAGE_FOLDER}/${id}-${type}.${ext}`;
@@ -366,7 +596,6 @@
       tryNext(0);
     }
 
-    // Safely executes Strava's <script> tag if you paste an HTML embed snippet
     function injectEmbedCode(htmlString, container) {
       container.innerHTML = htmlString;
       const scripts = container.querySelectorAll("script");
@@ -386,7 +615,9 @@
       }[m]));
     }
 
-    loadTimeline();
+    // Load both sections in parallel
+    loadFutureTimeline();
+    loadPastTimeline();
   </script>
 </body>
 </html>
