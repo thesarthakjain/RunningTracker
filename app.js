@@ -399,16 +399,19 @@ function renderHeatmap(runs, runsByDay) {
   const seasonEnd = new Date(YEAR, 11, 31);
   const today = new Date();
 
-  // Start one week before the first run of the season (no empty Jan–Jun grid)
-  const startMonday = new Date(runs[0].start);
-  startMonday.setHours(0, 0, 0, 0);
+  // Always render the whole year (Mon–Sun weeks); older weeks are hidden on
+  // mobile via CSS so the grid fits ~6 months on a phone.
+  const startMonday = new Date(YEAR, 0, 1);
   startMonday.setDate(startMonday.getDate() - ((startMonday.getDay() + 6) % 7));
-  startMonday.setDate(startMonday.getDate() - 7);
   const todayMonday = new Date(today);
   todayMonday.setDate(todayMonday.getDate() - ((todayMonday.getDay() + 6) % 7));
   const endMonday = new Date(Math.min(todayMonday, new Date(seasonEnd)));
   endMonday.setDate(endMonday.getDate() - ((endMonday.getDay() + 6) % 7));
   const endMondayClamped = endMonday < startMonday ? new Date(startMonday) : endMonday;
+
+  // Weeks older than this get the "old" class (hidden on small screens)
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 182); // ~6 months
 
   let cols = 0;
   const cells = [];
@@ -418,32 +421,41 @@ function renderHeatmap(runs, runsByDay) {
       day.setDate(monday.getDate() + d);
       const iso = isoDate(day);
       const entry = runsByDay[iso];
-      let cls = "hm-cell", tip = `${fmtDate(day)}`;
+      let cellCls = "hm-cell", tip = `${fmtDate(day)}`;
       if (day > seasonEnd || day > today) {
-        cls += " future";
+        cellCls += " future";
       } else if (entry) {
-        cls += entry.km < 8 ? " lv1" : entry.km < 12 ? " lv2" : " lv3";
+        cellCls += entry.km < 8 ? " lv1" : entry.km < 12 ? " lv2" : " lv3";
         tip += ` · ${fmtKm(entry.km)} km · ${entry.runs.length} run${entry.runs.length > 1 ? "s" : ""}`;
       } else {
-        tip += " · no run";
+        tip += ` · no run`;
       }
-      cells.push(`<div class="${cls}" title="${escapeHtml(tip)}"></div>`);
+      cells.push(`<div class="${cellCls}" title="${escapeHtml(tip)}"></div>`);
     }
     cols++;
   }
-  document.getElementById("heatmap").innerHTML = cells.join("");
+  // Wrap each week in a column so mobile can hide whole weeks
+  let weekHtml = "";
+  for (let c = 0; c < cols; c++) {
+    const isOld = new Date(startMonday.getTime() + c * 7 * 86400000) < cutoff;
+    weekHtml += `<div class="hm-col${isOld ? " old" : ""}">${cells.slice(c * 7, c * 7 + 7).join("")}</div>`;
+  }
+  document.getElementById("heatmap").innerHTML = weekHtml;
 
-  // month labels — label sits in the column of the week that contains the 1st
-  const labelPos = mIdx => {
+  // month labels — one slot per week column (so slots hide in sync with
+  // .hm-col on mobile); the name goes in the slot of the week containing the 1st
+  const labelCol = new Array(cols).fill("");
+  for (let mIdx = 0; mIdx < 12; mIdx++) {
     const firstOfMonth = new Date(YEAR, mIdx, 1);
     const weekMonday = new Date(firstOfMonth);
     weekMonday.setDate(firstOfMonth.getDate() - ((firstOfMonth.getDay() + 6) % 7));
-    return Math.round((weekMonday - startMonday) / (7 * 86400000));
-  };
+    const c = Math.round((weekMonday - startMonday) / (7 * 86400000));
+    if (c >= 0 && c < cols) labelCol[c] = MONTHS_SHORT[mIdx];
+  }
   let html = "";
-  for (let mIdx = 0; mIdx < 12; mIdx++) {
-    const c = labelPos(mIdx);
-    if (c >= 0 && c < cols) html += `<span style="left:${c * 15}px">${MONTHS_SHORT[mIdx]}</span>`;
+  for (let c = 0; c < cols; c++) {
+    const isOld = new Date(startMonday.getTime() + c * 7 * 86400000) < cutoff;
+    html += `<span class="hm-month-slot${isOld ? " old" : ""}">${labelCol[c]}</span>`;
   }
   document.getElementById("heatmap-months").innerHTML = html;
 }
