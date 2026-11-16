@@ -145,11 +145,6 @@ function parseActivities(rows) {
   const seen = new Set();
   const runs = [];
   for (const row of rows) {
-    const idRaw = pickCell(row, RAW_COLS.id);
-    const key = String(idRaw).trim();
-    if (key && seen.has(key)) continue;
-    if (key) seen.add(key);
-
     const type = String(pickCell(row, RAW_COLS.type));
     if (!/run/i.test(type)) continue; // runs, trail runs, run/walk only
 
@@ -162,9 +157,22 @@ function parseActivities(rows) {
     const km = distanceM != null ? distanceM / 1000 : null;
     if (km == null || km <= 0) continue;
 
+    const name = String(pickCell(row, RAW_COLS.name)).trim() || "Untitled run";
+
+    // De-dupe on real activity identity. The Activity ID column is unreliable:
+    // Google Sheets mangles large IDs into scientific notation (e.g. "2.10E+10"),
+    // collapsing distinct runs that share a rounded value.
+    const dedupeKey = `${start.getTime()}|${km.toFixed(2)}|${name}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+
+    // Only keep the ID if it is a genuine integer (safe for /activities/<id> links).
+    const idRaw = String(pickCell(row, RAW_COLS.id)).trim();
+    const id = /^\d{4,}$/.test(idRaw) ? idRaw : null;
+
     runs.push({
-      id: key,
-      name: String(pickCell(row, RAW_COLS.name)).trim() || "Untitled run",
+      id,
+      name,
       type,
       start,
       iso: isoDate(start),
