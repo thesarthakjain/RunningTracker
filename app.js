@@ -396,18 +396,18 @@ function renderHeatmap(runs, runsByDay) {
   const wrap = document.getElementById("heatmap-wrap");
   wrap.hidden = false;
 
-  const start = new Date(YEAR, 0, 1);
   const seasonEnd = new Date(YEAR, 11, 31);
   const today = new Date();
 
-  const startMonday = new Date(start);
+  // Start one week before the first run of the season (no empty Jan–Jun grid)
+  const startMonday = new Date(runs[0].start);
+  startMonday.setHours(0, 0, 0, 0);
   startMonday.setDate(startMonday.getDate() - ((startMonday.getDay() + 6) % 7));
+  startMonday.setDate(startMonday.getDate() - 7);
   const todayMonday = new Date(today);
   todayMonday.setDate(todayMonday.getDate() - ((todayMonday.getDay() + 6) % 7));
   const endMonday = new Date(Math.min(todayMonday, new Date(seasonEnd)));
   endMonday.setDate(endMonday.getDate() - ((endMonday.getDay() + 6) % 7));
-  // never before season start
-  if (endMonday < startMonday) { /* season hasn't started — show first week only */ }
   const endMondayClamped = endMonday < startMonday ? new Date(startMonday) : endMonday;
 
   let cols = 0;
@@ -419,7 +419,7 @@ function renderHeatmap(runs, runsByDay) {
       const iso = isoDate(day);
       const entry = runsByDay[iso];
       let cls = "hm-cell", tip = `${fmtDate(day)}`;
-      if (day > seasonEnd || day > today || day < start) {
+      if (day > seasonEnd || day > today) {
         cls += " future";
       } else if (entry) {
         cls += entry.km < 8 ? " lv1" : entry.km < 12 ? " lv2" : " lv3";
