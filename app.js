@@ -410,7 +410,6 @@ function renderHeatmap(runs, runsByDay) {
   if (endMonday < startMonday) { /* season hasn't started — show first week only */ }
   const endMondayClamped = endMonday < startMonday ? new Date(startMonday) : endMonday;
 
-  const maxKm = Math.max(1, ...Object.values(runsByDay).map(a => a.km));
   let cols = 0;
   const cells = [];
   for (let monday = new Date(startMonday); monday <= endMondayClamped; monday.setDate(monday.getDate() + 7)) {
@@ -423,8 +422,7 @@ function renderHeatmap(runs, runsByDay) {
       if (day > seasonEnd || day > today || day < start) {
         cls += " future";
       } else if (entry) {
-        const rel = entry.km / maxKm;
-        cls += rel <= 0.25 ? " lv1" : rel <= 0.6 ? " lv2" : " lv3";
+        cls += entry.km < 8 ? " lv1" : entry.km < 12 ? " lv2" : " lv3";
         tip += ` · ${fmtKm(entry.km)} km · ${entry.runs.length} run${entry.runs.length > 1 ? "s" : ""}`;
       } else {
         tip += " · no run";
