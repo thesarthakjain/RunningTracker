@@ -360,7 +360,7 @@ main section,
 .heatmap-daylabels {
   position: relative;
   width: 20px;
-  height: 66px;
+  height: 102px;
   flex: none;
   font-size: 0.6rem;
   color: var(--muted);

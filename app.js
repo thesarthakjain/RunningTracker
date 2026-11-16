@@ -427,17 +427,17 @@ function renderHeatmap(runs, runsByDay) {
   }
   document.getElementById("heatmap").innerHTML = cells.join("");
 
-  // month labels (skip weeks that start before the season)
-  let html = "", lastMonth = null;
-  for (let c = 0; c < cols; c++) {
-    const monday = new Date(startMonday);
-    monday.setDate(startMonday.getDate() + c * 7);
-    if (monday < start) continue;
-    const mIdx = monday.getMonth();
-    if (mIdx !== lastMonth) {
-      html += `<span style="left:${c * 15}px">${MONTHS_SHORT[mIdx]}</span>`;
-      lastMonth = mIdx;
-    }
+  // month labels — label sits in the column of the week that contains the 1st
+  const labelPos = mIdx => {
+    const firstOfMonth = new Date(YEAR, mIdx, 1);
+    const weekMonday = new Date(firstOfMonth);
+    weekMonday.setDate(firstOfMonth.getDate() - ((firstOfMonth.getDay() + 6) % 7));
+    return Math.round((weekMonday - startMonday) / (7 * 86400000));
+  };
+  let html = "";
+  for (let mIdx = 0; mIdx < 12; mIdx++) {
+    const c = labelPos(mIdx);
+    if (c >= 0 && c < cols) html += `<span style="left:${c * 15}px">${MONTHS_SHORT[mIdx]}</span>`;
   }
   document.getElementById("heatmap-months").innerHTML = html;
 }
