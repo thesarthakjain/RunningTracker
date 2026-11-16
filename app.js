@@ -470,11 +470,14 @@ function renderMonthlyChart(runs) {
 }
 
 function renderWeeklyChart(runs) {
-  const start = new Date(YEAR, 0, 1);
   const seasonEnd = new Date(YEAR, 11, 31);
   const today = new Date();
-  const startMonday = new Date(start);
-  startMonday.setDate(startMonday.getDate() - ((startMonday.getDay() + 6) % 7));
+  // Start one week before the first run of the season
+  const firstRunMonday = new Date(runs[0].start);
+  firstRunMonday.setHours(0, 0, 0, 0);
+  firstRunMonday.setDate(firstRunMonday.getDate() - ((firstRunMonday.getDay() + 6) % 7));
+  const startMonday = new Date(firstRunMonday);
+  startMonday.setDate(startMonday.getDate() - 7);
   let endMonday = new Date(Math.min(today, seasonEnd));
   endMonday.setDate(endMonday.getDate() - ((endMonday.getDay() + 6) % 7));
   if (endMonday < startMonday) endMonday = new Date(startMonday);
