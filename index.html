@@ -1,845 +1,124 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Running Milestones</title>
-  <style>
-    :root {
-      --bg: #fafafa;
-      --card-bg: #ffffff;
-      --text: #171717;
-      --muted: #737373;
-      --border: #e5e5e5;
-      --strava: #fc4c02;
-      --lift-shadow: 0 22px 48px -12px rgba(0, 0, 0, 0.14), 0 4px 16px -4px rgba(0, 0, 0, 0.06);
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0a0a0a;
-        --card-bg: #141414;
-        --text: #f5f5f5;
-        --muted: #a3a3a3;
-        --border: #262626;
-        --lift-shadow: 0 24px 52px -12px rgba(0, 0, 0, 0.75), 0 4px 18px -4px rgba(0, 0, 0, 0.5);
-      }
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-      padding: 3rem 1.25rem;
-      max-width: 680px;
-      margin: 0 auto;
-    }
-
-    header {
-      margin-bottom: 2.5rem;
-    }
-
-    .header-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-
-    header h1 {
-      font-size: 1.5rem;
-      font-weight: 600;
-      letter-spacing: -0.02em;
-    }
-
-    header p {
-      color: var(--muted);
-      font-size: 0.9rem;
-      margin-top: 0.35rem;
-    }
-
-    .sort-btn {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-family: inherit;
-      font-size: 0.78rem;
-      font-weight: 600;
-      padding: 0.35rem 0.85rem;
-      border-radius: 999px;
-      cursor: pointer;
-      user-select: none;
-      transition: border-color 0.15s ease, color 0.15s ease, opacity 0.2s ease, transform 0.1s ease;
-    }
-
-    .sort-btn:hover:not(:disabled) {
-      border-color: var(--strava);
-      color: var(--strava);
-    }
-
-    .sort-btn:active:not(:disabled) {
-      transform: scale(0.97);
-    }
-
-    .sort-btn:disabled {
-      opacity: 0.55;
-      cursor: wait;
-    }
-
-    /* Outer wrapper that flips section order */
-    #sections-container {
-      display: flex;
-      flex-direction: column;
-      gap: 2.5rem;
-      position: relative;
-    }
-
-    #sections-container.oldest-first {
-      flex-direction: column-reverse;
-    }
-
-    .section-block {
-      position: relative;
-      border-radius: 14px;
-      padding: 0.85rem 1rem;
-      margin: -0.85rem -1rem;
-      background-color: transparent;
-      border: 1px solid transparent;
-      transform-origin: center center;
-      will-change: transform, opacity, box-shadow, background-color;
-    }
-
-    .section-title {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-      font-size: 0.78rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-      margin-bottom: 1.25rem;
-      cursor: pointer;
-      user-select: none;
-      transition: color 0.15s ease;
-    }
-
-    .section-title:hover {
-      color: var(--strava);
-    }
-
-    .section-title .chevron {
-      font-size: 0.65rem;
-      transition: transform 0.25s ease, color 0.15s ease;
-    }
-
-    .section-title:hover .chevron {
-      color: var(--strava);
-    }
-
-    .section-title.all-open .chevron {
-      transform: rotate(90deg);
-    }
-
-    .status-msg {
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    .timeline {
-      position: relative;
-      border-left: 2px solid var(--border);
-      margin-left: 0.5rem;
-      padding-left: 1.75rem;
-      display: flex;
-      flex-direction: column;
-      gap: 2.1rem;
-    }
-
-    /* Reverse items inside each timeline when in Oldest to Newest mode */
-    #sections-container.oldest-first .timeline {
-      flex-direction: column-reverse;
-    }
-
-    .timeline.future-timeline {
-      border-left-style: dashed;
-    }
-
-    .timeline-item {
-      position: relative;
-    }
-
-    .timeline-dot {
-      position: absolute;
-      left: -2.15rem;
-      top: 0.35rem;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background-color: var(--bg);
-      border: 2px solid var(--strava);
-      transition: background-color 0.2s ease, border-color 0.2s ease;
-    }
-
-    .future-timeline .timeline-dot {
-      border-color: var(--muted);
-    }
-
-    .timeline-item.open .timeline-dot {
-      background-color: var(--strava);
-      border-color: var(--strava);
-    }
-
-    .item-header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 0.5rem;
-    }
-
-    .item-title-group {
-      cursor: pointer;
-      user-select: none;
-      display: flex;
-      align-items: baseline;
-      gap: 0.65rem;
-    }
-
-    .item-date {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
-
-    .item-title {
-      font-size: 1.05rem;
-      font-weight: 600;
-      transition: color 0.15s ease;
-    }
-
-    .item-title-group:hover .item-title {
-      color: var(--strava);
-    }
-
-    .chevron {
-      font-size: 0.75rem;
-      color: var(--muted);
-      transition: transform 0.25s ease;
-      display: inline-block;
-    }
-
-    .timeline-item.open .chevron {
-      transform: rotate(90deg);
-    }
-
-    .strava-link,
-    .planned-badge {
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-decoration: none;
-      border: 1px solid var(--border);
-      background: var(--card-bg);
-      padding: 0.15rem 0.55rem;
-      border-radius: 999px;
-    }
-
-    .strava-link {
-      color: var(--strava);
-      transition: border-color 0.15s ease;
-    }
-
-    .strava-link:hover {
-      border-color: var(--strava);
-    }
-
-    .planned-badge {
-      color: var(--muted);
-      font-weight: 500;
-    }
-
-    /* CSS Grid accordion wrapper for smooth folding and unfolding */
-    .details-collapse {
-      display: grid;
-      grid-template-rows: 0fr;
-      opacity: 0;
-      transition: grid-template-rows 0.32s cubic-bezier(0.4, 0, 0.2, 1),
-                  opacity 0.25s ease,
-                  margin-top 0.32s cubic-bezier(0.4, 0, 0.2, 1);
-      margin-top: 0;
-    }
-
-    .timeline-item.open .details-collapse {
-      grid-template-rows: 1fr;
-      opacity: 1;
-      margin-top: 0.75rem;
-    }
-
-    .details-inner {
-      overflow: hidden;
-    }
-
-    .item-details {
-      padding: 1rem;
-      background-color: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.92rem;
-    }
-
-    .item-description {
-      color: var(--text);
-      white-space: pre-line;
-    }
-
-    .goals-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 0.75rem;
-    }
-
-    .goal-box {
-      padding: 0.65rem 0.8rem;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background-color: var(--bg);
-    }
-
-    .goal-label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--strava);
-      margin-bottom: 0.2rem;
-    }
-
-    .goal-value {
-      font-size: 0.92rem;
-      font-weight: 500;
-      color: var(--text);
-    }
-
-    .embed-container {
-      margin-top: 1rem;
-      overflow-x: auto;
-    }
-
-    .embed-container:empty {
-      display: none;
-    }
-
-    .media-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 0.75rem;
-      margin-top: 1rem;
-    }
-
-    .media-grid:empty {
-      display: none;
-    }
-
-    .media-card {
-      border-radius: 6px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      background: var(--bg);
-    }
-
-    .media-card img {
-      width: 100%;
-      height: auto;
-      display: block;
-      object-fit: cover;
-    }
-
-    .media-label {
-      font-size: 0.7rem;
-      color: var(--muted);
-      padding: 0.3rem 0.5rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-  </style>
+  <title>Running Milestones · 2026</title>
+  <meta name="description" content="Sarthak Jain — 2026 running milestones, consistency and goals." />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-  <header>
-    <div class="header-top">
-      <h1>Running Milestones</h1>
-      <button id="sort-btn" class="sort-btn" type="button">Sort: Oldest to newest</button>
+  <header class="site-header">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 42 59" aria-hidden="true">
+        <path d="M29.2706 43.5683L24.1528 33.4854L16.5283 33.4982L29.2706 58.4349L41.9999 33.4854H34.3754L29.2706 43.5683Z" fill="currentColor"/>
+        <path d="M17.1812 19.9467L24.1529 33.4852H34.3755L17.1812 0L0 33.4852H10.2356L17.1812 19.9467Z" fill="currentColor"/>
+      </svg>
+      <div class="brand-text">
+        <h1>Running Milestones</h1>
+        <p class="subtitle">2026 season · <span id="data-as-of">loading…</span></p>
+      </div>
     </div>
-    <p>Tap any milestone or section header to expand targets, notes, race bibs, and medals.</p>
+    <div class="header-actions">
+      <button id="theme-btn" class="ghost-btn" type="button" aria-label="Toggle theme">☾</button>
+      <button id="sort-btn" class="ghost-btn" type="button">Sort: Oldest to newest</button>
+    </div>
   </header>
 
-  <main id="sections-container">
-    <!-- Section 1: Future Runs / Milestones Planned -->
-    <section class="section-block" id="future-section">
-      <h2 id="future-heading" class="section-title" title="Click to expand or collapse all">
-        <span class="chevron">&#9654;</span> Upcoming Targets
-      </h2>
-      <div id="future-status" class="status-msg">Loading upcoming runs...</div>
-      <div id="future-timeline" class="timeline future-timeline" style="display: none;"></div>
+  <main>
+    <!-- 2026 overview stats -->
+    <section id="overview">
+      <div id="overview-status" class="status-msg">Loading your 2026 runs…</div>
+      <div id="hero-stats" class="hero-stats" hidden></div>
     </section>
 
-    <!-- Section 2: Completed Milestones -->
-    <section class="section-block" id="past-section">
-      <h2 id="past-heading" class="section-title" title="Click to expand or collapse all">
-        <span class="chevron">&#9654;</span> Completed Milestones
-      </h2>
-      <div id="past-status" class="status-msg">Loading milestones...</div>
-      <div id="past-timeline" class="timeline" style="display: none;"></div>
+    <!-- Milestones -->
+    <section class="section-block" id="milestone-section" hidden>
+      <h2 class="section-title">2026 Milestones</h2>
+      <div id="milestone-grid" class="milestone-grid"></div>
     </section>
+
+    <!-- Consistency -->
+    <section class="section-block" id="consistency-section" hidden>
+      <h2 class="section-title">Consistency</h2>
+      <div id="streak-card" class="streak-card" hidden></div>
+      <div id="heatmap-wrap" class="heatmap-wrap" hidden>
+        <div class="heatmap-head">
+          <span class="heatmap-title">Run days · 2026</span>
+          <div class="heatmap-legend">
+            <span>Less</span>
+            <span class="legend-cell lv0"></span>
+            <span class="legend-cell lv1"></span>
+            <span class="legend-cell lv2"></span>
+            <span class="legend-cell lv3"></span>
+            <span>More</span>
+          </div>
+        </div>
+        <div class="heatmap-scroll">
+          <div class="heatmap-inner">
+            <div class="heatmap-months-row">
+              <div class="heatmap-months-spacer"></div>
+              <div id="heatmap-months" class="heatmap-months"></div>
+            </div>
+            <div class="heatmap-grid">
+              <div class="heatmap-daylabels">
+                <span style="top:0">M</span><span style="top:14px">W</span><span style="top:28px">F</span><span style="top:42px">S</span>
+              </div>
+              <div id="heatmap" class="heatmap"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Distance trends -->
+    <section class="section-block" id="trends-section" hidden>
+      <h2 class="section-title">Distance Trends</h2>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <h3>Km by month</h3>
+          <div id="monthly-chart" class="chart"></div>
+        </div>
+        <div class="chart-card">
+          <h3>Km by week</h3>
+          <div id="weekly-chart" class="chart"></div>
+          <p id="best-week" class="best-week"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Personal records -->
+    <section class="section-block" id="pr-section" hidden>
+      <h2 class="section-title">Personal Records</h2>
+      <div id="pr-grid" class="pr-grid"></div>
+    </section>
+
+    <!-- Sortable pair: upcoming + completed -->
+    <div id="sections-container">
+      <section class="section-block" id="future-section">
+        <h2 id="future-heading" class="section-title" title="Click to expand or collapse all">
+          <span class="chevron">&#9654;</span> Upcoming Targets
+        </h2>
+        <div id="future-status" class="status-msg">Loading upcoming runs...</div>
+        <div id="future-timeline" class="timeline future-timeline" style="display: none;"></div>
+      </section>
+
+      <section class="section-block" id="past-section">
+        <h2 id="past-heading" class="section-title" title="Click to expand or collapse all">
+          <span class="chevron">&#9654;</span> Completed Milestones
+        </h2>
+        <div id="past-status" class="status-msg">Loading milestones...</div>
+        <div id="past-timeline" class="timeline" style="display: none;"></div>
+      </section>
+    </div>
   </main>
 
-  <script>
-    const SHEET_ID = "1YRHuUMLQ0J7Nhu76l6jzs8XJykrZYbEc68CJCzuAS1s";
-    const FUTURE_TAB = "Future Tracker";
-    const PAST_TAB = "Past tracker";
-    const IMAGE_FOLDER = "./images";
-
-    const FUTURE_URL = `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(FUTURE_TAB)}`;
-    const PAST_URL = `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(PAST_TAB)}`;
-
-    const sectionsContainer = document.getElementById("sections-container");
-    const futureSection = document.getElementById("future-section");
-    const pastSection = document.getElementById("past-section");
-    const futureTimeline = document.getElementById("future-timeline");
-    const pastTimeline = document.getElementById("past-timeline");
-    const futureHeading = document.getElementById("future-heading");
-    const pastHeading = document.getElementById("past-heading");
-    const sortBtn = document.getElementById("sort-btn");
-
-    let isOldestFirst = false;
-    let isAnimating = false;
-
-    const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-    // Choreographed Fold (if needed) -> 3D Lift & Dim Glide -> Unfold (if needed)
-    sortBtn.addEventListener("click", async () => {
-      if (isAnimating) return;
-      isAnimating = true;
-      sortBtn.disabled = true;
-
-      // 1. Check which items are currently open
-      const previouslyOpenItems = Array.from(
-        document.querySelectorAll(".timeline-item.open")
-      );
-      const hadOpenItems = previouslyOpenItems.length > 0;
-
-      // 2. FOLD PHASE (only executes if at least one item was expanded)
-      if (hadOpenItems) {
-        previouslyOpenItems.forEach(item => item.classList.remove("open"));
-        syncSectionHeading(futureTimeline, futureHeading);
-        syncSectionHeading(pastTimeline, pastHeading);
-        await wait(340); // Wait for smooth CSS grid fold to complete
-      }
-
-      // 3. MEASURE BEFORE POSITIONS (First)
-      const pastStartTop = pastSection.getBoundingClientRect().top;
-      const futureStartTop = futureSection.getBoundingClientRect().top;
-
-      // 4. FLIP DOM ORDER (Last)
-      isOldestFirst = !isOldestFirst;
-      sectionsContainer.classList.toggle("oldest-first", isOldestFirst);
-      sortBtn.textContent = isOldestFirst
-        ? "Sort: Newest to oldest"
-        : "Sort: Oldest to newest";
-
-      const pastDeltaY = pastStartTop - pastSection.getBoundingClientRect().top;
-      const futureDeltaY = futureStartTop - futureSection.getBoundingClientRect().top;
-
-      // Layer Completed Milestones in foreground, Upcoming Targets underneath
-      pastSection.style.zIndex = "20";
-      futureSection.style.zIndex = "5";
-      pastSection.style.backgroundColor = "var(--card-bg)";
-      pastSection.style.borderColor = "var(--border)";
-
-      const GLIDE_DURATION = 1500;
-      const GLIDE_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
-
-      // 5. ANIMATE 3D SWAP
-      // Completed Milestones: lifts up, scales to 1.03x with soft card shadow, glides to new spot
-      const pastAnim = pastSection.animate(
-        [
-          {
-            transform: `translateY(${pastDeltaY}px) scale(1)`,
-            boxShadow: "0 0 0 rgba(0, 0, 0, 0)",
-            offset: 0
-          },
-          {
-            transform: `translateY(${pastDeltaY * 0.72}px) scale(1.03)`,
-            boxShadow: "var(--lift-shadow)",
-            offset: 0.22
-          },
-          {
-            transform: `translateY(${pastDeltaY * 0.18}px) scale(1.03)`,
-            boxShadow: "var(--lift-shadow)",
-            offset: 0.78
-          },
-          {
-            transform: "translateY(0px) scale(1)",
-            boxShadow: "0 0 0 rgba(0, 0, 0, 0)",
-            offset: 1
-          }
-        ],
-        { duration: GLIDE_DURATION, easing: GLIDE_EASING }
-      );
-
-      // Upcoming Targets: dims to 42% opacity, scales down to 0.95x, slides underneath
-      const futureAnim = futureSection.animate(
-        [
-          {
-            transform: `translateY(${futureDeltaY}px) scale(1)`,
-            opacity: 1,
-            offset: 0
-          },
-          {
-            transform: `translateY(${futureDeltaY * 0.72}px) scale(0.95)`,
-            opacity: 0.42,
-            offset: 0.22
-          },
-          {
-            transform: `translateY(${futureDeltaY * 0.18}px) scale(0.95)`,
-            opacity: 0.42,
-            offset: 0.78
-          },
-          {
-            transform: "translateY(0px) scale(1)",
-            opacity: 1,
-            offset: 1
-          }
-        ],
-        { duration: GLIDE_DURATION, easing: GLIDE_EASING }
-      );
-
-      await Promise.all([pastAnim.finished, futureAnim.finished]);
-
-      // Clean up temporary elevation styles
-      pastSection.style.zIndex = "";
-      futureSection.style.zIndex = "";
-      pastSection.style.backgroundColor = "";
-      pastSection.style.borderColor = "";
-
-      // 6. UNFOLD PHASE (only executes if items were open prior to clicking sort)
-      if (hadOpenItems) {
-        await wait(60);
-        previouslyOpenItems.forEach(item => item.classList.add("open"));
-        syncSectionHeading(futureTimeline, futureHeading);
-        syncSectionHeading(pastTimeline, pastHeading);
-        await wait(340);
-      }
-
-      isAnimating = false;
-      sortBtn.disabled = false;
-    });
-
-    // Syncs the section headline's chevron rotation based on whether all items are open
-    function syncSectionHeading(timelineEl, headingEl) {
-      const items = Array.from(timelineEl.querySelectorAll(".timeline-item"));
-      const allOpen = items.length > 0 && items.every(item => item.classList.contains("open"));
-      headingEl.classList.toggle("all-open", allOpen);
-    }
-
-    // Makes the section headline expand all items if any are closed, or collapse all if all are open
-    function setupHeadingToggle(timelineEl, headingEl) {
-      headingEl.addEventListener("click", () => {
-        if (isAnimating) return;
-        const items = Array.from(timelineEl.querySelectorAll(".timeline-item"));
-        if (!items.length) return;
-
-        const shouldExpand = items.some(item => !item.classList.contains("open"));
-
-        items.forEach(item => {
-          if (shouldExpand) {
-            item.classList.add("open");
-            if (typeof item._loadContent === "function") {
-              item._loadContent();
-            }
-          } else {
-            item.classList.remove("open");
-          }
-        });
-
-        syncSectionHeading(timelineEl, headingEl);
-      });
-    }
-
-    // Wraps details content in the smooth CSS Grid accordion container
-    function createCollapsibleWrapper(detailsEl) {
-      const collapse = document.createElement("div");
-      collapse.className = "details-collapse";
-      const inner = document.createElement("div");
-      inner.className = "details-inner";
-      inner.appendChild(detailsEl);
-      collapse.appendChild(inner);
-      return collapse;
-    }
-
-    async function loadFutureTimeline() {
-      const statusEl = document.getElementById("future-status");
-
-      try {
-        const res = await fetch(FUTURE_URL);
-        if (!res.ok) throw new Error("Failed to fetch future sheet data");
-        const rows = await res.json();
-
-        const validRows = rows.filter(r => (r["Achievement"] || "").trim() !== "");
-
-        if (!validRows.length) {
-          statusEl.textContent = "No upcoming targets scheduled right now.";
-          return;
-        }
-
-        // Reversed initially so farthest future target is at the top in default (Newest to oldest) mode
-        validRows.reverse().forEach(row => {
-          const date = (row["Date"] || "").trim();
-          const title = (row["Achievement"] || "").trim();
-          const goalA = (row["Goal A"] || "").trim();
-          const goalB = (row["Goal B"] || "").trim();
-
-          const item = document.createElement("div");
-          item.className = "timeline-item";
-
-          const dot = document.createElement("div");
-          dot.className = "timeline-dot";
-          item.appendChild(dot);
-
-          const header = document.createElement("div");
-          header.className = "item-header";
-
-          const titleGroup = document.createElement("div");
-          titleGroup.className = "item-title-group";
-          titleGroup.innerHTML = `
-            <span class="chevron">&#9654;</span>
-            <span class="item-date">${escapeHtml(date)}</span>
-            <span class="item-title">${escapeHtml(title)}</span>
-          `;
-          header.appendChild(titleGroup);
-
-          const badge = document.createElement("span");
-          badge.className = "planned-badge";
-          badge.textContent = "Planned";
-          header.appendChild(badge);
-
-          item.appendChild(header);
-
-          const details = document.createElement("div");
-          details.className = "item-details";
-
-          const goalsGrid = document.createElement("div");
-          goalsGrid.className = "goals-grid";
-
-          if (goalA) {
-            goalsGrid.innerHTML += `
-              <div class="goal-box">
-                <div class="goal-label">Goal A</div>
-                <div class="goal-value">${escapeHtml(goalA)}</div>
-              </div>
-            `;
-          }
-
-          if (goalB) {
-            goalsGrid.innerHTML += `
-              <div class="goal-box">
-                <div class="goal-label">Goal B</div>
-                <div class="goal-value">${escapeHtml(goalB)}</div>
-              </div>
-            `;
-          }
-
-          if (!goalA && !goalB) {
-            goalsGrid.innerHTML = `<p class="item-description">Targets to be finalized.</p>`;
-          }
-
-          details.appendChild(goalsGrid);
-          item.appendChild(createCollapsibleWrapper(details));
-
-          titleGroup.addEventListener("click", () => {
-            if (isAnimating) return;
-            item.classList.toggle("open");
-            syncSectionHeading(futureTimeline, futureHeading);
-          });
-
-          futureTimeline.appendChild(item);
-        });
-
-        statusEl.style.display = "none";
-        futureTimeline.style.display = "flex";
-        setupHeadingToggle(futureTimeline, futureHeading);
-      } catch (err) {
-        statusEl.textContent = "Unable to load upcoming runs. Check tab name 'Future Tracker'.";
-        console.error(err);
-      }
-    }
-
-    async function loadPastTimeline() {
-      const statusEl = document.getElementById("past-status");
-
-      try {
-        const res = await fetch(PAST_URL);
-        if (!res.ok) throw new Error("Failed to fetch past sheet data");
-        const rows = await res.json();
-
-        const validRows = rows.filter(r => (r["Achievement"] || "").trim() !== "");
-
-        if (!validRows.length) {
-          statusEl.textContent = "No milestones recorded yet.";
-          return;
-        }
-
-        // Reversed initially so newest completed milestone is on top in default (Newest to oldest) mode
-        validRows.reverse().forEach(row => {
-          const id = (row["ID"] || "").trim();
-          const date = (row["Date"] || "").trim();
-          const title = (row["Achievement"] || "").trim();
-          const desc = (row["Description"] || "").trim();
-          const stravaUrl = (row["Strava"] || "").trim();
-          const embedCode = (row["Embed Code"] || "").trim();
-
-          const item = document.createElement("div");
-          item.className = "timeline-item";
-
-          const dot = document.createElement("div");
-          dot.className = "timeline-dot";
-          item.appendChild(dot);
-
-          const header = document.createElement("div");
-          header.className = "item-header";
-
-          const titleGroup = document.createElement("div");
-          titleGroup.className = "item-title-group";
-          titleGroup.innerHTML = `
-            <span class="chevron">&#9654;</span>
-            <span class="item-date">${escapeHtml(date)}</span>
-            <span class="item-title">${escapeHtml(title)}</span>
-          `;
-
-          header.appendChild(titleGroup);
-
-          if (stravaUrl) {
-            const stravaBtn = document.createElement("a");
-            stravaBtn.className = "strava-link";
-            stravaBtn.href = stravaUrl;
-            stravaBtn.target = "_blank";
-            stravaBtn.rel = "noopener noreferrer";
-            stravaBtn.textContent = "Strava ↗";
-            header.appendChild(stravaBtn);
-          }
-
-          item.appendChild(header);
-
-          const details = document.createElement("div");
-          details.className = "item-details";
-
-          if (desc) {
-            const descP = document.createElement("p");
-            descP.className = "item-description";
-            descP.textContent = desc;
-            details.appendChild(descP);
-          }
-
-          let embedLoaded = false;
-          const embedContainer = document.createElement("div");
-          embedContainer.className = "embed-container";
-          details.appendChild(embedContainer);
-
-          let mediaLoaded = false;
-          const mediaGrid = document.createElement("div");
-          mediaGrid.className = "media-grid";
-          details.appendChild(mediaGrid);
-
-          item.appendChild(createCollapsibleWrapper(details));
-
-          // Lazy-loads media & embeds when opened individually or via the section headline
-          item._loadContent = () => {
-            if (!mediaLoaded && id) {
-              mediaLoaded = true;
-              probeAndAttachImage(id, "bib", "Race Bib", mediaGrid);
-              probeAndAttachImage(id, "medal", "Medal", mediaGrid);
-            }
-            if (!embedLoaded && embedCode) {
-              embedLoaded = true;
-              injectEmbedCode(embedCode, embedContainer);
-            }
-          };
-
-          titleGroup.addEventListener("click", () => {
-            if (isAnimating) return;
-            const isOpen = item.classList.toggle("open");
-            if (isOpen) {
-              item._loadContent();
-            }
-            syncSectionHeading(pastTimeline, pastHeading);
-          });
-
-          pastTimeline.appendChild(item);
-        });
-
-        statusEl.style.display = "none";
-        pastTimeline.style.display = "flex";
-        setupHeadingToggle(pastTimeline, pastHeading);
-      } catch (err) {
-        statusEl.textContent = "Unable to load milestones. Check Sheet ID & sharing permissions.";
-        console.error(err);
-      }
-    }
-
-    function probeAndAttachImage(id, type, label, container) {
-      const extensions = ["jpg", "jpeg", "png", "webp"];
-
-      function tryNext(index) {
-        if (index >= extensions.length) return;
-        const ext = extensions[index];
-        const img = new Image();
-        img.src = `${IMAGE_FOLDER}/${id}-${type}.${ext}`;
-        img.alt = `${label} #${id}`;
-
-        img.onload = () => {
-          const card = document.createElement("div");
-          card.className = "media-card";
-          card.innerHTML = `<div class="media-label">${label}</div>`;
-          card.prepend(img);
-          container.appendChild(card);
-        };
-
-        img.onerror = () => tryNext(index + 1);
-      }
-
-      tryNext(0);
-    }
-
-    function injectEmbedCode(htmlString, container) {
-      container.innerHTML = htmlString;
-      const scripts = container.querySelectorAll("script");
-      scripts.forEach(oldScript => {
-        const newScript = document.createElement("script");
-        Array.from(oldScript.attributes).forEach(attr =>
-          newScript.setAttribute(attr.name, attr.value)
-        );
-        newScript.textContent = oldScript.textContent;
-        oldScript.parentNode.replaceChild(newScript, oldScript);
-      });
-    }
-
-    function escapeHtml(str) {
-      return str.replace(/[&<>"']/g, m => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-      }[m]));
-    }
-
-    // Load both sections in parallel
-    loadFutureTimeline();
-    loadPastTimeline();
-  </script>
+  <footer class="site-footer">
+    <span>Data: your Strava export via Google Sheet · Strava orange <code>#FC5200</code></span>
+    <a href="https://www.strava.com/athletes/107463593" target="_blank" rel="noopener noreferrer">Strava profile ↗</a>
+  </footer>
+
+  <script src="app.js"></script>
 </body>
 </html>
