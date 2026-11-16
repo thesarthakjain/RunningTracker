@@ -312,6 +312,8 @@ main section,
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 0.9rem 1rem;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .heatmap-head {
