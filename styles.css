@@ -485,6 +485,28 @@ main section,
 
 .chart { display: flex; align-items: flex-end; gap: 4px; height: 140px; position: relative; }
 
+/* tap tooltip for phones/tablets (charts have no hover) */
+.touch-tip {
+  position: fixed;
+  z-index: 100;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--orange);
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.3rem 0.55rem;
+  border-radius: 8px;
+  box-shadow: var(--shadow-lift);
+  pointer-events: none;
+  max-width: 240px;
+  text-align: center;
+}
+
+.touch-tip[hidden] { display: none; }
+
+#monthly-chart, #heatmap, #weekly-chart { -webkit-tap-highlight-color: transparent; }
+
 /* reference lines (50k / 100k on the monthly chart) */
 .chart-refline {
   position: absolute;

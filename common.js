@@ -219,6 +219,39 @@ function isRaceName(name) {
   });
 })();
 
+/* ---------------- Touch tooltip (charts have no hover on phones) ---------------- */
+
+const touchTip = document.createElement("div");
+touchTip.className = "touch-tip";
+touchTip.hidden = true;
+document.body.appendChild(touchTip);
+let touchTipTimer = null;
+
+// anchorRect: the on-screen box to float the tooltip over (bar, cell, chart)
+function showTouchTip(anchorRect, text) {
+  if (!text) return;
+  touchTip.textContent = text;
+  touchTip.hidden = false;
+  const tw = touchTip.offsetWidth, th = touchTip.offsetHeight;
+  const vw = window.innerWidth;
+  let left = anchorRect.left + anchorRect.width / 2 - tw / 2;
+  left = Math.max(8, Math.min(left, vw - tw - 8)); // clamp to the viewport
+  let top = anchorRect.top - th - 8; // float above the target
+  if (top < 8) top = Math.min(anchorRect.bottom + 8, vw > 0 ? window.innerHeight - th - 8 : 8);
+  touchTip.style.left = left + "px";
+  touchTip.style.top = top + "px";
+  clearTimeout(touchTipTimer);
+  touchTipTimer = setTimeout(() => { touchTip.hidden = true; }, 2500);
+}
+
+function hideTouchTip() {
+  clearTimeout(touchTipTimer);
+  touchTip.hidden = true;
+}
+window.addEventListener("scroll", hideTouchTip, true);
+window.addEventListener("resize", hideTouchTip);
+document.addEventListener("click", hideTouchTip);
+
 /* ---------------- Page nav drop-down (shared by both pages) ---------------- */
 
 (function initPageMenu() {

@@ -229,6 +229,14 @@ function renderHeatmap(runs, runsByDay) {
     weekHtml += `<div class="hm-col${isOld ? " old" : ""}">${cells.slice(c * 7, c * 7 + 7).join("")}</div>`;
   }
   document.getElementById("heatmap").innerHTML = weekHtml;
+  // touch: tap a cell to see its stats (no hover on phones)
+  document.getElementById("heatmap").addEventListener("click", e => {
+    const cell = e.target.closest(".hm-cell");
+    if (cell) {
+      e.stopPropagation();
+      showTouchTip(cell.getBoundingClientRect(), cell.getAttribute("title"));
+    }
+  });
 
   // month labels — one slot per week column (so slots hide in sync with
   // .hm-col on mobile); the name goes in the slot of the week containing the 1st
@@ -259,7 +267,8 @@ function renderMonthlyChart(runs) {
   const el = document.getElementById("monthly-chart");
   el.innerHTML = kmByMonth.map((km, i) => {
     const h = km === 0 ? 3 : Math.max(6, (km / max) * 100);
-    return `<div class="bar ${km === 0 ? "zero" : ""}" style="height:${h}%;animation-delay:${i * 40}ms">
+    return `<div class="bar ${km === 0 ? "zero" : ""}" style="height:${h}%;animation-delay:${i * 40}ms"
+      data-tip="${MONTHS_SHORT[i]} · ${fmtKm(km)} km · ${countByMonth[i]} run${countByMonth[i] === 1 ? "" : "s"}">
       <span class="bar-tip">${MONTHS_SHORT[i]} · ${fmtKm(km)} km · ${countByMonth[i]} run${countByMonth[i] === 1 ? "" : "s"}</span>
     </div>`;
   }).join("") + [50, 100].map(v =>
@@ -267,6 +276,12 @@ function renderMonthlyChart(runs) {
       ? `<div class="chart-refline" style="bottom:${(v / max) * 100}%"><span>${v}k</span></div>`
       : ""
   ).join("");
+  el.querySelectorAll(".bar").forEach(bar => {
+    bar.addEventListener("click", e => {
+      e.stopPropagation();
+      showTouchTip(bar.getBoundingClientRect(), bar.dataset.tip);
+    });
+  });
   el.insertAdjacentHTML("afterend",
     `<div class="chart-labels">${MONTHS_SHORT.map(m => `<span>${m[0]}</span>`).join("")}</div>`);
 }
@@ -321,7 +336,8 @@ function renderWeeklyChart(runs) {
       : ""
   ).join("");
 
-  document.getElementById("weekly-chart").innerHTML =
+  const weeklyEl = document.getElementById("weekly-chart");
+  weeklyEl.innerHTML =
     `<div class="line-chart-wrap"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
       <defs>
         <linearGradient id="weekFill" x1="0" y1="0" x2="0" y2="1">
@@ -333,6 +349,19 @@ function renderWeeklyChart(runs) {
       <path class="week-line" d="${line}"/>
       ${dots}
     </svg>${refHtml}</div>`;
+
+  // touch: tap anywhere on the chart to see the nearest week's stats (no hover)
+  weeklyEl.addEventListener("click", e => {
+    e.stopPropagation();
+    const wrap = weeklyEl.querySelector(".line-chart-wrap");
+    const r = wrap.getBoundingClientRect();
+    const svgX = (e.clientX - r.left) / r.width * W; // back to viewBox coords
+    let idx = 0, best = Infinity;
+    pts.forEach((p, i) => { const d = Math.abs(p[0] - svgX); if (d < best) { best = d; idx = i; } });
+    const mon = weeks[idx];
+    const sun = new Date(mon.getTime() + 6 * 86400000);
+    showTouchTip(r, `${fmtDate(mon)} – ${fmtDate(sun)} · ${fmtKm(kmByWeek[idx])} km`);
+  });
 
   let bestIdx = 0;
   kmByWeek.forEach((km, i) => { if (km > kmByWeek[bestIdx]) bestIdx = i; });
