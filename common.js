@@ -242,14 +242,37 @@ function isRaceName(name) {
 
   const btn = wrap.querySelector(".page-menu-btn");
   const list = wrap.querySelector(".page-menu-list");
-  const close = () => { list.hidden = true; btn.setAttribute("aria-expanded", "false"); };
 
-  btn.addEventListener("click", e => {
-    e.stopPropagation();
-    const willOpen = list.hidden;
-    list.hidden = !willOpen;
-    btn.setAttribute("aria-expanded", String(willOpen));
-  });
+  // Position the menu relative to the button and clamp it to the viewport so it
+  // never clips off-screen, regardless of where the (possibly wrapped) header
+  // puts the button.
+  function place() {
+    const br = btn.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const gap = 6;
+    const top = br.bottom + gap;
+    const width = list.offsetWidth || 150;
+    let left = br.right - width; // align right edge with the button's right edge
+    left = Math.max(8, Math.min(left, vw - width - 8)); // clamp to the viewport
+    list.style.top = top + "px";
+    list.style.left = left + "px";
+  }
+
+  function open() {
+    list.hidden = false;
+    place();
+    btn.setAttribute("aria-expanded", "true");
+  }
+  function close() {
+    if (list.hidden) return;
+    list.hidden = true;
+    btn.setAttribute("aria-expanded", "false");
+  }
+  const toggle = () => (list.hidden ? open() : close());
+
+  btn.addEventListener("click", e => { e.stopPropagation(); toggle(); });
   document.addEventListener("click", close);
   document.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+  window.addEventListener("scroll", close, true);
+  window.addEventListener("resize", close);
 })();

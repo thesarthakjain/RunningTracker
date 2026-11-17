@@ -93,9 +93,9 @@ a.ghost-btn { display: inline-block; }
 .page-menu { position: relative; }
 
 .page-menu-list {
-  position: absolute;
-  top: calc(100% + 0.4rem);
-  right: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
   min-width: 150px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -109,12 +109,6 @@ a.ghost-btn { display: inline-block; }
 }
 
 .page-menu-list[hidden] { display: none; }
-
-/* On narrow screens the button sits at the left edge (header wraps), so
-   anchor the menu to the left so it can't run off-screen. */
-@media (max-width: 720px) {
-  .page-menu-list { left: 0; right: auto; }
-}
 
 .page-menu-link {
   padding: 0.4rem 0.7rem;
