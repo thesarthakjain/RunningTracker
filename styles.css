@@ -483,7 +483,26 @@ main section,
   margin-bottom: 0.75rem;
 }
 
-.chart { display: flex; align-items: flex-end; gap: 4px; height: 140px; }
+.chart { display: flex; align-items: flex-end; gap: 4px; height: 140px; position: relative; }
+
+/* reference lines (50k / 100k on the monthly chart) */
+.chart-refline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed var(--muted);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.chart-refline span {
+  position: absolute;
+  right: 0;
+  top: -0.85rem;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--muted);
+}
 
 .bar {
   flex: 1;

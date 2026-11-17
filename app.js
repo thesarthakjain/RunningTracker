@@ -255,14 +255,18 @@ function renderMonthlyChart(runs) {
   const countByMonth = new Array(12).fill(0);
   for (const r of runs) { kmByMonth[r.start.getMonth()] += r.km; countByMonth[r.start.getMonth()]++; }
 
-  const max = Math.max(...kmByMonth, 1);
+  const max = Math.max(...kmByMonth, 100); // scale always includes the 100k reference line
   const el = document.getElementById("monthly-chart");
   el.innerHTML = kmByMonth.map((km, i) => {
     const h = km === 0 ? 3 : Math.max(6, (km / max) * 100);
     return `<div class="bar ${km === 0 ? "zero" : ""}" style="height:${h}%;animation-delay:${i * 40}ms">
       <span class="bar-tip">${MONTHS_SHORT[i]} · ${fmtKm(km)} km · ${countByMonth[i]} run${countByMonth[i] === 1 ? "" : "s"}</span>
     </div>`;
-  }).join("");
+  }).join("") + [50, 100].map(v =>
+    v <= max
+      ? `<div class="chart-refline" style="bottom:${(v / max) * 100}%"><span>${v}k</span></div>`
+      : ""
+  ).join("");
   el.insertAdjacentHTML("afterend",
     `<div class="chart-labels">${MONTHS_SHORT.map(m => `<span>${m[0]}</span>`).join("")}</div>`);
 }
@@ -294,7 +298,7 @@ function renderWeeklyChart(runs) {
   });
 
   const W = 560, H = 130, PAD = 10;
-  const max = Math.max(...kmByWeek, 1);
+  const max = Math.max(...kmByWeek, 30); // scale always includes the 30k reference line
   const pts = kmByWeek.map((km, i) => {
     const x = weeks.length === 1 ? W / 2 : PAD + (i / (weeks.length - 1)) * (W - 2 * PAD);
     const y = H - PAD - (km / max) * (H - 2 * PAD);
@@ -310,6 +314,13 @@ function renderWeeklyChart(runs) {
     return `<circle class="week-dot" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.5"><title>${escapeHtml(label)}</title></circle>`;
   }).join("");
 
+  const refY = v => (10 + (v / max) * (H - 2 * PAD)) / H * 100; // % from bottom of the wrap
+  const refHtml = [15, 30].map(v =>
+    v <= max
+      ? `<div class="chart-refline" style="bottom:${refY(v)}%"><span>${v}k</span></div>`
+      : ""
+  ).join("");
+
   document.getElementById("weekly-chart").innerHTML =
     `<div class="line-chart-wrap"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
       <defs>
@@ -321,7 +332,7 @@ function renderWeeklyChart(runs) {
       <path class="week-area" d="${area}"/>
       <path class="week-line" d="${line}"/>
       ${dots}
-    </svg></div>`;
+    </svg>${refHtml}</div>`;
 
   let bestIdx = 0;
   kmByWeek.forEach((km, i) => { if (km > kmByWeek[bestIdx]) bestIdx = i; });
