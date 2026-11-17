@@ -218,3 +218,38 @@ function isRaceName(name) {
     apply(next);
   });
 })();
+
+/* ---------------- Page nav drop-down (shared by both pages) ---------------- */
+
+(function initPageMenu() {
+  const actions = document.querySelector(".header-actions");
+  if (!actions) return;
+
+  const here = location.pathname.endsWith("timeline.html") ? "timeline" : "dashboard";
+  const items = [
+    { id: "dashboard", href: "index.html", label: "Dashboard" },
+    { id: "timeline", href: "timeline.html", label: "Timeline" },
+  ];
+
+  const wrap = document.createElement("div");
+  wrap.className = "page-menu";
+  wrap.innerHTML = `
+    <button class="ghost-btn page-menu-btn" type="button" aria-haspopup="true" aria-expanded="false">Pages ▾</button>
+    <div class="page-menu-list" role="menu" hidden>
+      ${items.map(i => `<a class="page-menu-link${i.id === here ? " active" : ""}" role="menuitem" href="${i.href}">${i.label}</a>`).join("")}
+    </div>`;
+  actions.insertBefore(wrap, actions.firstChild);
+
+  const btn = wrap.querySelector(".page-menu-btn");
+  const list = wrap.querySelector(".page-menu-list");
+  const close = () => { list.hidden = true; btn.setAttribute("aria-expanded", "false"); };
+
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    const willOpen = list.hidden;
+    list.hidden = !willOpen;
+    btn.setAttribute("aria-expanded", String(willOpen));
+  });
+  document.addEventListener("click", close);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+})();
