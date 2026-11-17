@@ -21,8 +21,8 @@
       </div>
     </div>
     <div class="header-actions">
+      <a class="ghost-btn" href="timeline.html">Timeline →</a>
       <button id="theme-btn" class="ghost-btn" type="button" aria-label="Toggle theme">☾</button>
-      <button id="sort-btn" class="ghost-btn" type="button">Sort: Oldest to newest</button>
     </div>
   </header>
 
@@ -90,31 +90,13 @@
       <h2 class="section-title">Personal Records</h2>
       <div id="pr-grid" class="pr-grid"></div>
     </section>
-
-    <!-- Sortable pair: upcoming + completed -->
-    <div id="sections-container">
-      <section class="section-block" id="future-section">
-        <h2 id="future-heading" class="section-title" title="Click to expand or collapse all">
-          <span class="chevron">&#9654;</span> Upcoming Targets
-        </h2>
-        <div id="future-status" class="status-msg">Loading upcoming runs...</div>
-        <div id="future-timeline" class="timeline future-timeline" style="display: none;"></div>
-      </section>
-
-      <section class="section-block" id="past-section">
-        <h2 id="past-heading" class="section-title" title="Click to expand or collapse all">
-          <span class="chevron">&#9654;</span> Completed Milestones
-        </h2>
-        <div id="past-status" class="status-msg">Loading milestones...</div>
-        <div id="past-timeline" class="timeline" style="display: none;"></div>
-      </section>
-    </div>
   </main>
 
   <footer class="site-footer">
     <a href="https://www.strava.com/athletes/107463593" target="_blank" rel="noopener noreferrer">Strava profile ↗</a>
   </footer>
 
+  <script src="common.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

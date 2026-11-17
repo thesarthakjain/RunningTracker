@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Running Timeline · 2026</title>
+  <meta name="description" content="Sarthak Jain — upcoming targets and completed milestones." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="brand">
+      <a class="brand-link" href="index.html" aria-label="Back to dashboard">
+        <svg class="logo" viewBox="0 0 42 59" aria-hidden="true">
+          <path d="M29.2706 43.5683L24.1528 33.4854L16.5283 33.4982L29.2706 58.4349L41.9999 33.4854H34.3754L29.2706 43.5683Z" fill="currentColor"/>
+          <path d="M17.1812 19.9467L24.1529 33.4852H34.3755L17.1812 0L0 33.4852H10.2356L17.1812 19.9467Z" fill="currentColor"/>
+        </svg>
+        <div class="brand-text">
+          <h1>Running Timeline</h1>
+          <p class="subtitle">2026 season · <a class="back-link" href="index.html">← Dashboard</a></p>
+        </div>
+      </a>
+    </div>
+    <div class="header-actions">
+      <button id="theme-btn" class="ghost-btn" type="button" aria-label="Toggle theme">☾</button>
+      <button id="sort-btn" class="ghost-btn" type="button">Sort: Oldest to newest</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="sections-container">
+      <section class="section-block" id="future-section">
+        <h2 id="future-heading" class="section-title" title="Click to expand or collapse all">
+          <span class="chevron">&#9654;</span> Upcoming Targets
+        </h2>
+        <div id="future-status" class="status-msg">Loading upcoming runs...</div>
+        <div id="future-timeline" class="timeline future-timeline" style="display: none;"></div>
+      </section>
+
+      <section class="section-block" id="past-section">
+        <h2 id="past-heading" class="section-title" title="Click to expand or collapse all">
+          <span class="chevron">&#9654;</span> Completed Milestones
+        </h2>
+        <div id="past-status" class="status-msg">Loading milestones...</div>
+        <div id="past-timeline" class="timeline" style="display: none;"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <a href="https://www.strava.com/athletes/107463593" target="_blank" rel="noopener noreferrer">Strava profile ↗</a>
+  </footer>
+
+  <script src="common.js"></script>
+  <script src="timeline.js"></script>
+</body>
+</html>
