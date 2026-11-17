@@ -312,8 +312,6 @@ main section,
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 0.9rem 1rem;
-  width: fit-content;
-  max-width: 100%;
 }
 
 .heatmap-head {
@@ -348,7 +346,7 @@ main section,
 .legend-cell.lv3 { background: var(--orange); }
 
 .heatmap-scroll { overflow-x: auto; padding-bottom: 0.25rem; }
-.heatmap-inner { display: flex; flex-direction: column; min-width: max-content; }
+.heatmap-inner { display: flex; flex-direction: column; }
 
 .heatmap-months-row { display: flex; }
 .heatmap-months-spacer { width: 20px; flex: none; }
@@ -356,12 +354,13 @@ main section,
   display: flex;
   height: 14px;
   margin-bottom: 3px;
-  flex: none;
+  flex: 1;
+  min-width: 0;
 }
 
 .hm-month-slot {
-  width: calc(var(--hm-cell, 12px) + var(--hm-gap, 3px));
-  flex: none;
+  flex: 1 1 0;
+  min-width: 0;
   position: relative;
   font-size: 0.6rem;
   color: var(--muted);
@@ -381,32 +380,22 @@ main section,
 
 .heatmap-daylabels span { position: absolute; left: 0; line-height: var(--hm-cell, 12px); }
 
-.heatmap { display: flex; gap: var(--hm-gap, 3px); }
+.heatmap { display: flex; gap: var(--hm-gap, 3px); flex: 1; min-width: 0; }
 
-.hm-col { display: flex; flex-direction: column; gap: var(--hm-gap, 3px); }
+.hm-col { display: flex; flex-direction: column; align-items: center; gap: var(--hm-gap, 3px); flex: 1 1 0; min-width: 0; }
 
 /* Mobile: show only the last ~6 months (weeks older than that are hidden,
-   month-label slots hide in sync so the row stays aligned). Cells shrink via
-   the --hm-* vars so the ~26 visible columns fit without horizontal scrolling. */
+   month-label slots hide in sync). Visible columns stretch to fill the card,
+   so no horizontal scrolling is needed. */
 @media (max-width: 720px) {
   .hm-col.old { display: none; }
   .hm-month-slot.old { display: none; }
-
-  .heatmap-wrap { width: 100%; }
-
-  :root { --hm-cell: 9px; --hm-gap: 2px; --hm-step: 11px; }
-
-  /* tighten further on small phones so the grid still fits */
-  @media (max-width: 380px) {
-    :root { --hm-cell: 8px; --hm-gap: 2px; --hm-step: 10px; }
-    .heatmap-daylabels { width: 16px; }
-    .heatmap-months-spacer { width: 16px; }
-  }
 }
 
 .hm-cell {
   width: var(--hm-cell, 12px);
   height: var(--hm-cell, 12px);
+  flex: none;
   border-radius: 2.5px;
   background: var(--cell-off);
   cursor: default;
